@@ -18,7 +18,7 @@ you_is # function
 loop_dev # function
 
 ##---Testing, careful with the remove tools---##
-# running volumes, [11] in menu
+# running volumes
 if [ $1 = running-lo ]; then
     atachedlo=$(losetup -a)
   if [ -n "$atachedlo" ];then
@@ -28,7 +28,7 @@ if [ $1 = running-lo ]; then
   fi
 fi
 
-# running logical devices, [11] in menu
+# running logical devices
 if [ $1 = running-dm ]; then
     atacheddm=$(dmsetup info)
   if [ -n "$atacheddm" ];then
@@ -38,7 +38,7 @@ if [ $1 = running-dm ]; then
   fi
 fi
 
-# mounted logical devices [11] in menu
+# mounted logical devices 
 if [ $1 = mounted-dm ]; then
     mountdm=$(mount | grep '/dev/mapper' | awk -F':' '{print $1}')
   if [ -n "$mountdm" ];then
@@ -48,7 +48,7 @@ if [ $1 = mounted-dm ]; then
   fi
 fi
 
-# Experimental, remove logical device. [21] in menu
+# Experimental, remove logical device
 if [ $1 = exlo ] ; then
   loex=$(losetup -a| grep '/dev/loop' | awk -F':' '{print $1}')
   var_opt="$loex"
@@ -62,7 +62,7 @@ if [ $1 = exlo ] ; then
   fi
 fi
 
-# Experimental, remove the loopdevice. [22] in menu
+# Experimental, remove the loopdevice
 if [ $1 = exdm ]; then
   dmex=$(dmsetup info | grep 'Name:' | awk -F':              ' '{print $2}')
   var_opt="$dmex"
@@ -195,36 +195,36 @@ if [ $1 = open ] || [ $1 = modpass ] || [ $1 = modhash ] || [ $1 = modkey ] || \
   fi
 fi
 
-# close and clean up… [3] in menu
+# close and clean up…
 if [ $1 = close ]; then
   un_mount # function
 
-# change your password of your volume [5] in menu
+# change your password of your volume
 elif [ $1 = modpass ]; then
   pass_mod # function
   un_mount # function
 
-# change the hash of your volume [6] in menu
+# change the hash of your volume
 elif [ $1 = modhash ]; then
   hash_mod # function
   un_mount # function
 
-# change the key of your volume [7] in menu
+# change the key of your volume
 elif [ $1 = modkey ]; then
   key_mod # function
   un_mount # function
 
-# backup the header of your volume [8] in menu
+# backup the header of your volume
 elif [ $1 = bakhead ]; then
   bak_head # function
   un_mount # function
 
-# restore a header from a backup header file [9] in menu
+# restore a header from a backup header file
 elif [ $1 = resthead ]; then
   rest_head # function
   un_mount # function
 
-# get info about a volume [10] in mneu
+# get info about a volume
 elif [ $1 = info ]; then
   in_fo # function
   pause # function
