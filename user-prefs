@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# user-prefs
+# creator qinohe ed gmail
+
+# change:
+# mount point for path* in function 'my_paths'
+# you can also set this to be some dir in your home dir,
+# though, it's currently mounted to /media
+mnt_path() {
+         mntpt=/media/
+}
+
+#change:
+# path's to your created volumes, you can also add disks to this list.
+my_paths() {
+         var_opt="/home/"$user"/tcdia/tc1 \
+                  /home/"$user"/tcdia/tc2 \
+                  /home/"$user"/tcdia/tc3 \
+                  /home/"$user"/tcdia/tc4 \
+                  /home/"$user"/tcdia/tc5 \
+                  /home/"$user"/tcdia/tc6 \
+                  /home/"$user"/tcdia/tc7 \
+                  /home/"$user"/tcdia/tc8 \
+                  /home/"$user"/tcdia/tc9 \
+                  /home/"$user"/tcdia/tc10"
+}
+
+# change:
+# user - no real need to change, unless you need to 'hard' set it.
+# uncomment one, comment the other!
+you_is() {
+         #user=you
+         # check the user that invoked sudo or 'sudo su'
+         user=${SUDO_USER:-$(whoami)}
+}
+
+# vim:set ts=2 sw=2 et:

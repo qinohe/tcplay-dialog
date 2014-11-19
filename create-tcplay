@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+
+# create-tcplay
+# create encrypted containers, for use with tcplay
+# creator qinohe ed gmail
+
+trap on_exit 1 2 3 15   #ERR
+trap 'rm -f "$dialogon"' 0 1 2 3 5 15
+
+MYDIR="$(dirname "$(readlink -f "$0")")"
+. "$MYDIR"/funct-tcplay
+. "$MYDIR"/user-prefs
+
+root_is # function
+you_is # function
+loop_dev # function
+set_is # function
+
+eval run_us "$loopdev"
+
+# start question part
+# create a defined sized container, no real error checking here.
+quest='full path, where container will be created?'
+dia_in # function
+tcplaypath=$(sed 's/\"//g' < "$dialogon")
+
+quest='name for the container to create?'
+dia_in # function
+tcplayname=$(sed 's/\"//g' < "$dialogon")
+
+quest='size?, e.g: 10M, 10G'
+dia_in # function
+tcplaysize=$(sed 's/\"//g' < "$dialogon")
+
+# call hash function for outer volume
+quest='choose hash for outer volume'  # variable for function (v.f.)
+avail_hash # function
+dia_logs # function
+encrypthash=$(sed 's/\"//g' < "$dialogon")
+
+# call ciper function for outer volume
+quest='choose cipher for outer volume'  # v.f.
+avail_cipher # function
+dia_logs # function
+encryptcipher=$(sed 's/\"//g' < "$dialogon")
+
+# check for hidden file creation
+quest='Do you want to create a hidden volume?'  # v.f.
+yes_no # function
+dia_logs # function
+hide=$(sed 's/\"//g' < "$dialogon")
+
+# check for a keyfile, for both volumes, with diff. hash & cipher
+if [ "$hide" = Yes ]; then
+  quest='use keyfile for both outer & hidden volume Y(es) N(o) O(uter) H(idden)' # v.f.
+  use_keyfiles # function
+  dia_logs # function
+  keyfile=$(sed 's/\"//g' < "$dialogon")
+
+  # path to keyfile(s) or none
+  if [ "$keyfile" = Yes ]; then
+    quest='path to keyfile for outer volume'
+    dia_in # function
+    keyout=$(sed 's/\"//g' < "$dialogon")
+
+    quest='path to keyfile for hidden volume'
+    dia_in # function
+    keyin=$(sed 's/\"//g' < "$dialogon")
+  elif [ "$keyfile" = Outer ]; then
+    quest='path to keyfile for outer volume'
+    dia_in # function
+    keyout=$(sed 's/\"//g' < "$dialogon")
+  elif [ "$keyfile" = Hidden ]; then
+    quest='path to keyfile for hidden volume'
+    dia_in # function
+    keyin=$(sed 's/\"//g' < "$dialogon")
+  elif [ "$keyfile" = No ]; then
+    keyfile=No
+  fi
+
+    # check for different hash & cipher for hidden volume
+    quest='different has&cipher for hidden volume?' # v.f.
+    yes_no # function
+    dia_logs # function
+    hidehashcipher=$(sed 's/\"//g' < "$dialogon")
+
+    # choose hash & cipher for hidden volume
+    if [ "$hidehashcipher" = Yes ]; then
+      # call hash function for hidden volume
+      quest='choose hash for hidden volume'  # v.f.
+      avail_hash # function
+      dia_logs # function
+      encrypthashin=$(sed 's/\"//g' < "$dialogon")
+
+      # call cipher function for hidden volume
+      quest='choose cipher for hidden volume'  # v.f.
+      avail_cipher # function
+      dia_logs # function
+      encryptcipherin=$(sed 's/\"//g' < "$dialogon")
+    fi
+
+elif [ "$hide" = No ]; then
+    quest='use keyfile for outer volume Y(es) N(o)' # v.f.
+    yes_no # function
+    dia_logs # function
+    keyfile=$(sed 's/\"//g' < "$dialogon")
+    if [ "$keyfile" = Yes ]; then
+      quest='path to keyfile for outer volume'
+      dia_in # function
+      keyout=$(sed 's/\"//g' < "$dialogon")
+    fi
+fi
+
+  retvalfilesys=$?
+  quest='what file system do you want to use'
+  file_sys # function
+  dia_logs # function
+  tcplayfilesystem=$(sed 's/\"//g' < "$dialogon")
+
+#----------------------------------------------------------#
+
+dialog --title "Warning" --msgbox "Do not quit after this dialog, \if you do, see 'Little help on issues'" 10 28
+# capture Ctrl+C, Ctrl+Z and quit signals using trap
+trap "" INT QUIT TSTP
+
+#----------------------------------------------------------#
+
+  mkdir -p "$tcplaypath"
+  cd "$tcplaypath"
+
+  fallocate -l "$tcplaysize" "$tcplayname"
+  losetup "$loopdev" "$tcplayname"
+
+# elif hell, though, here the magic happens ;)
+if [ "$hide" = No ] && [ "$keyfile" = No ]; then
+  printf "You're choice1 %s\n" "$encrypthash $encryptcipher, no keyfile, no hidden $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher"
+elif [ "$hide" = No ] && [ "$keyfile" = Yes ]; then
+  printf "You're choice2 %s\n" "$encrypthash $encryptcipher, keyfile, no hidden $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -k "$keyout"
+elif [ "$hide" = Yes ] && [ "$keyfile" = No ] && [ "$hidehashcipher" = No ]; then
+  printf "You're choice3 %s\n" "$encrypthash $encryptcipher & hidden, no keyfiles $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g
+elif [ "$hide" = Yes ] && [ "$keyfile" = Outer ] && [ "$hidehashcipher" = No ]; then
+  printf "You're choice4 %s\n" "$encrypthash $encryptcipher, hidden & outer keyfile $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g -k "$keyout"
+elif [ "$hide" = Yes ] && [ "$keyfile" = Hidden ] && [ "$hidehashcipher" = No ]; then
+  printf "You're choice5, outer %s\n" "$encrypthash $encryptcipher, hidden & hidden keyfile $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g -f "$keyin"
+elif [ "$hide" = Yes ] && [ "$keyfile" = Yes ] && [ "$hidehashcipher" = No  ]; then
+  printf "You're choice6 %s\n" "$encrypthash $encryptcipher, hidden, outer - & hidden keyfile $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g -k "$keyout" -f "$keyin"
+elif [ "$hide" = Yes ] && [ "$keyfile" = No ] && [ "$hidehashcipher" = Yes ]; then
+  printf "You're choice7, outer %s\n" "$encrypthash $encryptcipher & hidden $encrypthashin $encryptcipherin $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g -x "$encrypthashin" -y "$encryptcipherin"
+elif [ "$hide" = Yes ] && [ "$keyfile" = Outer ] && [ "$hidehashcipher" = Yes ]; then
+  printf "You're choice8, outer %s\n" "$encrypthash $encryptcipher, outer keyfile & hidden $encrypthashin $encryptcipherin $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -k "$keyout" -g -x "$encrypthashin" -y "$encryptcipherin"
+elif [ "$hide" = Yes ] && [ "$keyfile" = Hidden ] && [ "$hidehashcipher" = Yes ]; then
+  printf "You're choice9, outer %s\n" "$encrypthash $encryptcipher, hidden keyfile & hidden $encrypthashin $encryptcipherin $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -g -x "$encrypthashin" -y "$encryptcipherin" -f "$keyin"
+elif [ "$hide" = Yes ] && [ "$keyfile" = Yes ] && [ "$hidehashcipher" = Yes ]; then
+  printf "You're choice10, outer %s\n" "$encrypthash $encryptcipher, keyfile in & out, hidden  $encrypthashin $encryptcipherin $tcplayfilesystem $tcplaysize."
+  tcplay -c -d "$loopdev" -a "$encrypthash" -b "$encryptcipher" -k "$keyout" -g -x "$encrypthashin" -y "$encryptcipherin" -f "$keyin"
+fi
+
+# map container to loop device
+if [ "$keyfile" = No ]; then
+  tcplay -m "$tcplayname" -d "$loopdev"
+elif [ "$keyfile" = Yes ]; then
+  tcplay -m "$tcplayname" -d "$loopdev" -k "$keyout"
+elif [ "$keyfile" = Outer ]; then
+  tcplay -m "$tcplayname" -d "$loopdev" -k "$keyout"
+elif [ "$keyfile" = Hidden ]; then
+  tcplay -m "$tcplayname" -d "$loopdev"
+fi
+
+# build a file system and exit
+   [ "$retvalfilesys" -ne 0 ] && exit 0
+if [ -n "$tcplayfilesystem" ]; then
+  printf "You're choice, formating to %s\n" "$tcplayfilesystem"
+  mkfs."$tcplayfilesystem" /dev/mapper/"$tcplayname"
+else
+  printf "No input given, using default, ext4."
+  mkfs.ext4 /dev/mapper/"$tcplayname"
+fi
+  # Otherwise dmsetup might not be able to remove the crypted device, we need to wait 1 sec.
+  # This is on lots of distro´s, even virtual ones, 1 sec. seems to be enough.
+  sleep 1
+
+  dmsetup remove "$tcplayname"
+  losetup -d "$loopdev"
+
+on_exit # function
+
+# vim:set ts=2 sw=2 et:

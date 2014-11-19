@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# tcplay-menu
+# menu to use tcplay
+# creator qinohe ed gmail
+
+
+MYDIR="$(dirname "$(readlink -f "$0")")"
+. "$MYDIR"/funct-tcplay
+. "$MYDIR"/user-prefs
+
+you_is # function
+#set_is # function
+
+
+while :
+do
+  # tcplay menu
+  clear
+  printf "%s\n" -------------------------------------------------------------
+  printf "T C P L A Y - M E N U   dialog version \n"
+  printf "%s\n" -------------------------------------------------------------
+  printf " Note: Please, read about [18]\n"
+  printf "%s\n" -------------------------------------------------------------
+  printf " 1. Mount a container\n"
+  printf " 2. Mount a disk, using full disk ecryption\n"
+  printf " 3. Unmount a container\n"
+  printf " 4. Create a container\n"
+  printf " 5. Change a password, be patient, could take a little while.\n"
+  printf " 6. Change a hash, be patient, could take a little while.\n"
+  printf " 7. Change a keyfile, be patient, could take a little while.\n"
+  printf " 8. Make a backup from the header of the volume\n"
+  printf " 9. Restore a header from backup\n"
+  printf "10. Info about a container\n"
+  printf "11. Delete a volume -be carefull-\n"
+  printf "12. Edit the user preferences\n"
+  printf "13. Edit files that come with this tool. -carefull-\n"
+  printf "14. Man tcplay -- q to exit'\n"
+  printf "15. Tcplay version\n"
+  printf "16. Liitle help for issues -- q to exit\n"
+  printf "17. About this tool -- q to exit\n"
+  printf "18. Exit\n"
+  printf "%s\n" -------------------------------------------------------------
+  printf "T E S T I N G    note: use [23 & 24] with great care\n"
+  printf "%s\n" -------------------------------------------------------------
+  printf "19. Are there running loop devices?\n"
+  printf "20. Are there running logical devices?\n"
+  printf "21. Mounted logical devices\n"
+  printf "22. Remove a running loopdevice.\n"
+  printf "23. Remove a logical device.\n"
+  printf "%s\n" -------------------------------------------------------------
+  printf "E X P E R I M E N T A L\n"
+  printf "%s\n" -------------------------------------------------------------
+  printf "24. Keymaker, create a keyfile\n"  
+  printf "\n"  
+  read -r -p "Enter a number [1-24] : " tcpl
+  
+  # run these
+  case $tcpl in
+        1) sh "$MYDIR"/open-edit-close open;;
+        2) sh "$MYDIR"/open-edit-close fde; pause;;
+        3) sh "$MYDIR"/open-edit-close close; pause;;
+        4) sh "$MYDIR"/create-tcplay; pause;;
+        5) sh "$MYDIR"/open-edit-close modpass; pause;;
+        6) sh "$MYDIR"/open-edit-close modhash; pause;;
+        7) sh "$MYDIR"/open-edit-close modkey; pause;;
+        8) sh "$MYDIR"/open-edit-close bakhead; pause;;
+        9) sh "$MYDIR"/open-edit-close resthead; pause;;
+       10) sh "$MYDIR"/open-edit-close info; pause;;
+       11) sh "$MYDIR"/open-edit-close del; pause;;
+       12) run_us;eval "$runyu" "'vim "$MYDIR"/user-prefs'";;
+       13) edit_it; run_us; eval "$runyu" "'vim "$MYDIR"/"$path"'";;
+       14) run_us;eval "$runyu" "'man tcplay | less'";;
+       15) run_us;eval "$runyu";eval vers='$(tcplay -v)'; 
+           dialog --title "Mesage" --msgbox " $vers" 6 20;;
+       16) run_us;eval "$runyu" ""$MYDIR"/issues | less";;
+       17) run_us;eval "$runyu" ""$MYDIR"/about | less";;
+       18) break;;
+       19) sh "$MYDIR"/open-edit-close running-lo;;
+       20) sh "$MYDIR"/open-edit-close running-dm;;
+       21) sh "$MYDIR"/open-edit-close mounted-dm;;
+       22) sh "$MYDIR"/open-edit-close exlo;;
+       23) sh "$MYDIR"/open-edit-close exdm;;
+       24) sh "$MYDIR"/keymaker;;
+        *) printf  "Pick a number, 1 to 24\n"; pause;;
+  esac
+done
+
+exit 0
+
+#vim:set ts=2 sw=2 et:

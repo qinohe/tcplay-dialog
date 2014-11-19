@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# keymaker
+# create a key file
+# creator qinohe ed gmail
+
+# Experimental, if you do not understand the tool, please don't use it.
+# give name, location & byte! size for the keyfile
+# keysize 32 byte=256 bit, 256 byte=2048 bit, ygtp ;-)
+MYDIR="$(dirname "$(readlink -f "$0")")"
+. "$MYDIR"/funct-tcplay
+trap on_exit 1 2 3 15   ##ERR
+trap 'rm -f "$dialogon"' 0 1 2 3 5 15
+
+root_is # function
+#set_is # function
+
+quest='Give a path, where to create the keyfile?'
+dia_in # function
+pathkey=$(sed 's/\"//g' < "$dialogon")
+
+  if [ ! "$pathkey" ]; then
+    dialog --title "Message" --msgbox "No input, closing" 6 20
+  exit 1
+  fi
+
+quest='Name for the keyfile? e.g: tcplay_key'
+dia_in # function
+namekey=$(sed 's/\"//g' < "$dialogon")
+
+  if [ ! "$namekey" ]; then
+    dialog --title "Message" --msgbox "No input, closing" 6 20
+    exit 1
+  fi
+
+quest='Key size in bytes, e.g:32 byte = 256 bit keysize'
+dia_in # function
+sizekey=$(sed 's/\"//g' < "$dialogon")
+
+  if [ ! "$sizekey" ]; then
+    dialog --title "Message" --msgbox "No input, closing" 6 20
+    exit 1
+  fi
+
+# If the dir. in pathkey doesn't exist, create it.
+[ -d "$pathkey" ] || mkdir "$pathkey"
+
+dd if=/dev/urandom of="$pathkey"/"$namekey" bs=1 count="$sizekey"
+
+chmod 400 "$pathkey"/"$namekey"
+
+dialog --title "Message" --msgbox "Your key is made" 6 20
+
+on_exit # function
+
+# vim:set ts=2 sw=2 et:

@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+
+# open-edit-close
+# manage truecrypt containers using tcplay
+# creator qinohe ed gmail
+
+
+trap onexit 1 2 3 15  ##ERR
+trap 'rm -f "$dialogon"' 0 1 2 3 5 15
+
+MYDIR="$(dirname "$(readlink -f "$0")")"
+. "$MYDIR"/funct-tcplay
+. "$MYDIR"/user-prefs
+
+#set_is # function
+root_is # function
+you_is # function
+loop_dev # function
+
+##---Testing, careful with the remove tools---##
+# running volumes, [11] in menu
+if [ $1 = running-lo ]; then
+    atachedlo=$(losetup -a)
+  if [ -n "$atachedlo" ];then
+    dialog --title "Message" --msgbox "$atachedlo" 6 60
+  else
+    dialog --title "Message" --msgbox "Nothing to show" 6 20
+  fi
+fi
+
+# running logical devices, [11] in menu
+if [ $1 = running-dm ]; then
+    atacheddm=$(dmsetup info)
+  if [ -n "$atacheddm" ];then
+    dialog --title "Message" --msgbox "$atacheddm" 6 60
+  else
+    dialog --title "Message" --msgbox "Nothing to show" 6 20
+  fi
+fi
+
+# mounted logical devices [11] in menu
+if [ $1 = mounted-dm ]; then
+    mountdm=$(mount | grep '/dev/mapper' | awk -F':' '{print $1}')
+  if [ -n "$mountdm" ];then
+    dialog --title "Message" --msgbox "$mountdm" 6 60
+  else
+    dialog --title "Message" --msgbox "Nothing to show" 6 20
+  fi
+fi
+
+# Experimental, remove logical device. [21] in menu
+if [ $1 = exlo ] ; then
+  loex=$(losetup -a| grep '/dev/loop' | awk -F':' '{print $1}')
+  var_opt="$loex"
+  quest='Are you sure you want to remove the loopdevice'
+  dia_logs # function
+  lox=$(sed 's/\"//g' < "$dialogon")
+  if [ -n "$loex" ]; then 
+    losetup -d "$lox"
+  else
+    dialog --title "Message" --msgbox "Nothing to remove" 6 20
+  fi
+fi
+
+# Experimental, remove the loopdevice. [22] in menu
+if [ $1 = exdm ]; then
+  dmex=$(dmsetup info | grep 'Name:' | awk -F':              ' '{print $2}')
+  var_opt="$dmex"
+  quest='Are you sure you want to remove the logical device'
+  dia_logs # function
+  dmx=$(sed 's/\"//g' < "$dialogon")
+  if [ -n "$dmex" ]; then
+    dmsetup remove "$dmx"
+  else
+    dialog --title "Message" --msgbox "Nothing to remove" 6 20
+  fi
+fi
+##---END Testing---##
+
+# which volume are we going to use
+if [ $1 = open ] || [ $1 = close ] || [ $1 = modpass ] || [ $1 = modhash ] || \
+   [ $1 = modkey ] || [ $1 = bakhead ] || [ $1 = resthead ] || [ $1 = fde ] || \
+   [ $1 = info ] || [ $1 = del ]; then
+
+  my_paths # function
+  quest='Choose youre tcplay volume'
+  dia_logs # function
+  path=$(sed 's/\"//g' < "$dialogon")
+  cryptdev="${path##*/}"
+fi  
+
+###---START-Are we already running test---##
+if [ $1 = open ] || [ $1 = fde ] || [ $1 = del ]; then
+  dev_loop # function
+  for devs in $device; do
+    if [ -e "$devs" ]; then
+      dialog --title "Warning" --msgbox "Volume is already running returning to menu!!" 8 25
+    exit
+    fi
+  done
+fi
+
+if [ $1 = modpass ] || [ $1 = modhash ] || [ $1 = modkey ] || \
+   [ $1 = info ] || [ $1 = bakhead ] || [ $1 = resthead ]; then
+  dev_loop # function
+  for devs in $device; do
+    if [ ! "$devs" ]; then
+    break
+    else
+      quest='Note: volume running, Q: did you use a keyfile for it?' 
+      yes_no # function
+      dia_logs # function
+      usekey=$(sed 's/\"//g' < "$dialogon")
+
+      if [ "$usekey" = Yes ]; then
+        quest='path to the keyfile used'
+        dia_in # function
+        key=$(sed 's/\"//g' < "$dialogon")
+      fi
+       
+      if [ $1 = modpass ]; then
+        pass_mod # function
+      elif [ $1 = modhash ]; then
+        hash_mod # function
+      elif [ $1 = modkey ]; then
+        key_mod # function
+      elif [ $1 = info ]; then
+        in_fo # function
+      elif [ $1 = bakhead ]; then
+        bak_head # function
+      elif [ $1 = resthead ]; then
+        rest_head # function
+      fi
+      exit
+    fi
+  done
+fi      
+##---END-Are we already running test---##
+
+# unecrypt and mount container
+if [ $1 = open ] || [ $1 = modpass ] || [ $1 = modhash ] || [ $1 = modkey ] || \
+   [ $1 = bakhead ] || [ $1 = resthead ] || [ $1 = fde ] || [ $1 = info ]; then
+
+  losetup "$loopdev" "$path"
+  quest='Do you want to use keyfiles for your volume' 
+  yes_no # function
+  dia_logs # function
+  usekey=$(sed 's/\"//g' < "$dialogon")
+
+  if [ "$usekey" = No ]; then
+    tcplay -m "$cryptdev" -d "$loopdev" 
+  elif [ "$usekey" = Yes ]; then
+    quest='Protect hidden volume from being overwritten?, if there is one'
+    yes_no # function
+    dia_logs # function
+    safein=$(sed 's/\"//g' < "$dialogon")
+      
+    if [ "$safein" = Yes ]; then
+      read -p "/Path/to/tc_key? for hidden volume!! : " key
+      tcplay -m "$cryptdev" -d "$loopdev" --protect-hidden -k "$key"
+    elif [ "$safein" = No ]; then
+      read -p "/Path/to/tc_key for volume? : " key
+      tcplay -m "$cryptdev" -d "$loopdev" -k "$key"
+    fi
+  fi
+
+fi
+
+
+if [ $1 = open ] || [ $1 = close ] || [ $1 = modpass ] || [ $1 = modhash ] || \
+   [ $1 = modkey ] || [ $1 = bakhead ] || [ $1 = resthead ] || [ $1 = fde ] || \
+   [ $1 = info ]; then
+  mnt_path # function
+  mountpt="$mntpt"/"$cryptdev"
+fi 
+
+if [ $1 = open ] || [ $1 = modpass ] || [ $1 = modhash ] || [ $1 = modkey ] || \
+   [ $1 = bakhead ] || [ $1 = resthead ] || [ $1 = fde ] || [ $1 = info ]; then
+
+   [ -d "$mountpt" ] || mkdir "$mountpt"
+
+  # used file system
+  quest='Used file system e.g:ext4, vfat? V(fat) or O(ther)'
+  fs_mnt # function
+  dia_logs # function
+  filesystem=$(sed 's/\"//g' < "$dialogon")
+  
+  if [ "$filesystem" = Normal-fs ]; then
+    # mount options
+    mount -o nodev,nosuid /dev/mapper/"$cryptdev" "$mountpt"
+    dialog --title "Message" --msgbox "$cryptdev mounted" 6 20
+  elif [ "$filesystem" = Vfat ]; then
+    # mount options
+    mount -o nodev,nosuid,uid=1000,gid=100 /dev/mapper/"$cryptdev" "$mountpt"
+  fi
+fi
+
+# close and clean up… [3] in menu
+if [ $1 = close ]; then
+  un_mount # function
+
+# change your password of your volume [5] in menu
+elif [ $1 = modpass ]; then
+  pass_mod # function
+  un_mount # function
+
+# change the hash of your volume [6] in menu
+elif [ $1 = modhash ]; then
+  hash_mod # function
+  un_mount # function
+
+# change the key of your volume [7] in menu
+elif [ $1 = modkey ]; then
+  key_mod # function
+  un_mount # function
+
+# backup the header of your volume [8] in menu
+elif [ $1 = bakhead ]; then
+  bak_head # function
+  un_mount # function
+
+# restore a header from a backup header file [9] in menu
+elif [ $1 = resthead ]; then
+  rest_head # function
+  un_mount # function
+
+# get info about a volume [10] in mneu
+elif [ $1 = info ]; then
+  in_fo # function
+  pause # function
+  un_mount # function
+
+# map disk using full disk encryption.
+elif [ $1 = fde ]; then
+  if [ "$usekey" = No ]; then
+    tcplay -m "$cryptdev" -d "$loopdev" --fde
+  elif [ "$usekey" = Yes ]; then
+    tcplay -m "$cryptdev" -d "$loopdev" -k "$key" --fde
+  fi
+    if [ "$usekey" = Yes || "$usekey" = No ]; then
+      quest='Do you have partitions on t # functionhis device, and like to map them too?'
+      yes_no # function
+      dia_logs # function
+      hdmap=$(sed 's/\"//g' < "$dialogon")
+      
+      # access partitions on mapped disk, if any.
+      if [ "$hdmap" = Yes ]; then
+        kpartx --av /dev/mapper/"$cryptdev"
+      fi
+    fi
+
+# delete a volume
+elif [ $1 = del ]; then
+  quest="You're about to delete $path, are you sure?"
+  dia_q # function
+  if [ $? -eq "0" ]; then
+    rm -r "$path"
+  else
+  exit
+  fi  
+  
+fi
+
+on_exit
+
+## vim:set ts=2 sw=2 et:

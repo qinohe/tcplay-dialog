@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+# about [19] in menu
+# about this tool
+# creator qinohe ed gmail
+
+  clear
+  printf "%s\n" ----------------------------------------------------------------
+  printf " A B O U T  \n"
+  printf "%s\n" ----------------------------------------------------------------
+  printf "\n"
+  printf " Created with tcplay version 2.0\n"
+  printf " Not all functionality may be present on your version of Tcplay\n"
+  printf " This is an experimental tool for testing purposes\n"
+  printf " All credits for the program Tcplay, go to the creator\n"
+  printf " of Tcplay, see: \n"
+  printf " https://github.com/bwalex/tc-play\n"
+  printf "\n"
+  printf " These scripts are not vandal-proof, performing a task and\n"
+  printf " leaving\closing it somewhere in the middle might cause\n"
+  printf " some unwanted effects, be aware of that.\n"
+  printf " see: resolving some issues [16]\n"
+  printf "\n"
+  printf " Be very carefull to use the Testing/Experimental tools.\n"
+  printf " They're not perfect and could to damage your volume,\n"
+  printf " if mounted.\n"
+  printf "\n"
+  printf " q to exit\n"
+  printf "%s\n" ----------------------------------------------------------------
+  printf "\n"
+  printf "\n"

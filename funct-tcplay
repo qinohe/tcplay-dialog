@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+
+# tcplay-funct
+# functions for tcplay tool
+# creator qinohe ed gmail
+
+### NO NEED to change anything below this line ### 
+#------------------------------------------------#
+dialogon=$(dialogon 2>/dev/null) || dialogon=/tmp/dialogon
+idi=$(cat /etc/*-release | grep -w 'ID')
+
+##---BEGIN Distro check, we're Linux, but not all the same---##
+# check if a device is mounted
+dev_loop() {
+	       if [ "$idi" = ID=fedora ] || [ "$idi" = ID=opensuse ]; then
+	         device=$(/usr/sbin/losetup -j "$path" | grep '/dev/loop' | awk -F':' '{print $1}')
+	       else
+	         device=$(losetup -j "$path" | grep '/dev/loop' | awk -F':' '{print $1}')
+           fi
+}
+
+# check running loopdevice
+loop_dev() {
+	       if [ "$idi" = ID=fedora ] || [ "$idi" = ID=opensuse ]; then
+	         loopdev=$(/usr/sbin/losetup -f)
+	       else
+	         loopdev=$(losetup -f)
+           fi
+}
+
+# some commands don't need to be run as root
+run_us() {
+	       if [ "$idi" = ID=ubuntu ] || [ "$idi" = ID=debian ]; then
+	         runyu="sudo -u "$user" -i bash -c"
+	       else
+	         runyu="runuser -l "$user" -c"
+	       fi
+}
+##---END distro check---##
+
+
+##---BEGIN dialogs section---##         
+# dialog inputbox
+dia_in() {
+	       dialog --title "Usage: write or paste (Shift+MiddleMB) your input and [Enter]" --clear \
+	              --inputbox "$quest" 8 30  2> "$dialogon";    
+}
+
+# part of dialog
+dia_logs() {
+           dialog_opts=""
+
+           for opt in $var_opt; do
+             dialog_opts="${dialog_opts} \"$opt\" \"\" on"
+           done
+           
+             dialog --backtitle "Usage: arrow keys up down & space bar, [Enter]." \
+                    --title "$quest" --clear \
+                    --radiolist "" 14 58 14 $dialog_opts 2> "$dialogon";
+}
+
+# dialog question
+dia_q() {
+	       dialog --title " Sure?" --clear \
+                  --yesno "$quest" 10 30
+} 
+
+# edit files available for this tool
+edit_it() {
+           quest='Choose the script to edit' # function variable
+           var_opt="open-edit-close create-tcplay user-prefs funct-tcplay keymaker"	  
+          
+           dia_logs # function
+           path=$(sed 's/\"//g' < "$dialogon")
+}
+
+# file system question
+fs_mnt() {
+           var_opt="Normal-fs \
+                    Vfat"
+}
+
+file_sys() {
+	       var_opt="ext4 \
+	                ext3 \
+	                ext2 \
+	                bfs \
+	                minix \
+	                xfs \
+	                msdos \
+	                vfat"
+}
+
+# choose a cipher
+avail_cipher() {
+           var_opt="AES-256-XTS \
+                    TWOFISH-256-XTS \
+                    SERPENT-256-XTS  \
+                    TWOFISH-256-XTS,AES-256-XTS \
+                    AES-256-XTS,SERPENT-256-XTS \
+                    SERPENT-256-XTS,TWOFISH-256-XTS \
+                    AES-256-XTS,TWOFISH-256-XTS,SERPENT-256-XTS \
+                    SERPENT-256-XTS,TWOFISH-256-XTS,AES-256-XTS"
+}
+
+# choose a hash
+avail_hash() {
+           var_opt="whirlpool \
+                    RIPEMD160 \
+                    SHA512"
+}
+
+# multiple possibilities
+use_keyfiles() {
+           var_opt="Yes \
+                    No \
+                    Outer \
+                    Hidden"
+}
+
+
+# yes no question
+yes_no() {
+           var_opt="Yes \
+                    No"
+}
+##---END dialogs functions---##
+
+
+# always exit sourced script with exit status
+on_exit() {
+           local exit_status=${1:-$?}
+           echo Exiting $0 with $exit_status
+           exit $exit_status
+}
+
+# error exit function, when a command fails.
+error_exit() {
+	       echo "$1" 1>&2
+	       exit 1
+}
+
+# display message and pause
+pause() {
+	       read -p " Press [Enter] to continue..." key
+}
+
+# check if root is the one running this script
+root_is() {
+           if [ "$(id -u)" != "0" ]; then
+             echo “Need to be root” 2>&1
+           exit 1
+           fi
+}
+
+# function — set or unset options and positional parameters, see:<man set>
+# Uncomment for error checks, also uncomment sets in the script you want to check.
+set_is() {
+	       # Exit if any command has non zero exit status
+           set -x
+           # Shell functions inherit ERR trap, same as 'set -e'
+           set -e
+           #set -o errtrace
+           # Error when expanding unset variables, same as 'set -u'
+           set -o nounset
+}
+
+# unmount function
+un_mount() {
+	       dev_loop
+	       umount "$mountpt"
+	       sleep 1
+           dmsetup remove "$cryptdev" || printf "demapping failed\n"
+           losetup -d "$device" || printf "deleting %s\n" "$loopdev failed"
+           rm -r /media/"$cryptdev"
+}
+
+##---START modify ---##
+# change the password of a container
+pass_mod() {
+	       dev_loop
+	       
+	       if [ "$usekey" = No ]; then
+             tcplay --modify -d "$device"
+           elif [ "$usekey" = Yes ]; then
+             tcplay --modify -d "$device" -k "$key"
+           fi
+}
+
+# change the hash of a volume
+hash_mod() {
+	       quest='Enter the new hash'
+	       avail_hash
+	       dia_logs
+	       newhash=$(sed 's/\"//g' < "$dialogon")
+	       dev_loop
+
+           # modify hash
+           if [ "$usekey" = No ]; then
+             tcplay --modify -d "$device" --new-pbkdf-prf "$newhash"
+           elif [ "$usekey" = Yes ]; then
+             tcplay --modify -d "$device" -k "$key" --new-pbkdf-prf "$newhash"
+           fi
+}
+
+# change the key of a volume
+key_mod() {
+	       quest='Path to  new keyfile'
+	       dia_in
+	       newkey=$(sed 's/\"//g' < "$dialogon")
+	       dev_loop
+	       
+           tcplay --modify -d "$device" -k "$key" --new-keyfile "$newkey"
+}
+
+# get info of a volume
+in_fo() {
+	       dev_loop
+	       
+	       if [ "$usekey" = No ]; then
+             tcplay -i -d "$device"
+           elif [ "$usekey" = Yes ]; then
+             tcplay -i -d "$device" -k "$key"
+           fi
+}
+
+# backup header of a volume
+bak_head() {
+	       quest='Path to save a backup from the header'
+	       dia_in
+	       bakpath=$(sed 's/\"//g' < "$dialogon")
+           dev_loop
+           
+           if [ "$usekey" = Yes ]; then
+             tcplay --modify -d "$device" -k "$key" --save-hdr-backup="$bakpath"/backup_header_"$cryptdev".hdr
+           elif [ "$usekey" = No ]; then
+             tcplay --modify -d "$device" --save-hdr-backup="$bakpath"/backup_header_"$cryptdev".hdr
+           fi
+}
+
+# restore main header of a disk
+rest_head_main() {
+           dev_loop
+           
+           if [  "$usekey" = No ]; then
+             tcplay --modify -d "$device" --restore-from-backup-hdr
+           elif [ "$usekey" = Yes ]; then
+             tcplay --modify -d " $device" -k "$key" --restore-from-backup-hdr
+           fi
+}
+
+# restore header
+rest_head() {
+	       quest='Path to restore a backup from the header'
+	       dia_in
+	       bakpath=$(sed 's/\"//g' < "$dialogon")
+	       dev_loop
+
+	       if [  "$usekey" = No ]; then
+	         #tcplay --modify -d "$device" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
+	         tcplay --modify -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
+	       elif [ "$usekey" = Yes ]; then
+	         #tcplay --modify -d "$device" -k "$key" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
+	         tcplay --modify -k "$key" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
+	       fi
+
+}       
+##---END modify---##
+
+
+# vim:set ts=2 sw=2 et:

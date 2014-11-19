@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# issues [18] in menu
+# about this tool
+# creator qinohe ed gmail
+
+  clear
+  printf "%s\n" --------------------------------------------------------------
+  printf " L I T T L E - H E L P - O N  - I S S U E S\n"
+  printf "%s\n" --------------------------------------------------------------
+  printf "\n"
+  printf " If tcplay device is still present, but unmounted!!\n"  
+  printf " Check 'Testing' [19-23]\n"
+  printf "\n"
+  printf " Scripting Issues:\n"
+  printf " problem1:\n"
+  printf " Create container, with file system msdos or xfs.\n"
+  printf " device-mapper: remove ioctl on tctest18 failed: Device or\n"
+  printf " resource busy Command failed\n"
+  printf " Exiting ./menu-tcplay with 1\n"
+  printf " solution1:\n"
+  printf " Added 'sleep 1' just before 'dmsetup remove'\n"
+  printf "\n"
+  printf " problem3:\n"
+  printf " When creating a container, providing a wrong second password exits\n"
+  printf " the script, leaving a loopdevice.\n"
+  printf " solution3\n"
+  printf " No solution, remove loopdevice e.g: menu [21]\n"
+  printf " Be sure to remove the right one!\n"
+  printf "\n"
+  printf " Distro depended problems:\n"
+  printf " Not all distro's use the same set of commands, there are some differences.\n"
+  printf " Tested; ArchLinux, Debian, Ubuntu, Fedora & Opensuse\n"
+  printf " I have no intention to test beyond these.\n"
+  printf "\n"
+  printf " Shell depended problems:\n"
+  printf " I discovered, a lot of 'things' work in ZSH but not in BASH.\n"
+  printf " Rewritten the script, now it works on both BASH & ZSH.\n"
+  printf " Not tested beyond these two.\n"
+  printf "\n"
+  printf " The script play's nicely here, but (-:\n" 
+  printf " If you are sure it's not your fault the script hangs,\n"         
+  printf " or something bad happens.\n"
+  printf " Apologies , let me know, I will change things.\n"
+  printf " qinohe\n"
+  printf "\n"
+  printf " q to exit\n"
+  printf "%s\n" --------------------------------------------------------------
+  printf "\n"
+  printf "\n"
+
