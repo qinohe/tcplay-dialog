@@ -23,3 +23,8 @@ Add trim (discard) for SSD volumes, is something I planned to do in a later stad
 Pushing this tool to a site like GitHub means, exporting it worldwide.
 Some governments do not allow the use of tools like this one. 
 Be sure you know this yourself, before you start using it.
+
+
+### Credits tc-play
+Copyright (c) 2011 Alex Hornung <alex@alexhornung.com>.
+All rights reserved.
