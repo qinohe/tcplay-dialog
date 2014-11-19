@@ -172,7 +172,7 @@ un_mount() {
 	       sleep 1
            dmsetup remove "$cryptdev" || printf "demapping failed\n"
            losetup -d "$device" || printf "deleting %s\n" "$loopdev failed"
-           rm -r /media/"$cryptdev"
+           rm -r /"$mntpt"/"$cryptdev"
 }
 
 ##---START modify ---##
@@ -257,10 +257,8 @@ rest_head() {
 	       dev_loop
 
 	       if [  "$usekey" = No ]; then
-	         #tcplay --modify -d "$device" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
 	         tcplay --modify -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
 	       elif [ "$usekey" = Yes ]; then
-	         #tcplay --modify -d "$device" -k "$key" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
 	         tcplay --modify -k "$key" -use-hdr-file="$bakpath"/backup_header_"$cryptdev".hdr
 	       fi
 

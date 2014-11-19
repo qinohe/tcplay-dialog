@@ -5,7 +5,7 @@
 # creator qinohe ed gmail
 
 
-trap onexit 1 2 3 15  ##ERR
+trap onexit 1 2 3 15
 trap 'rm -f "$dialogon"' 0 1 2 3 5 15
 
 MYDIR="$(dirname "$(readlink -f "$0")")"
@@ -238,7 +238,7 @@ elif [ $1 = fde ]; then
     tcplay -m "$cryptdev" -d "$loopdev" -k "$key" --fde
   fi
     if [ "$usekey" = Yes || "$usekey" = No ]; then
-      quest='Do you have partitions on t # functionhis device, and like to map them too?'
+      quest='Do you have partitions on this device, and like to map them too?'
       yes_no # function
       dia_logs # function
       hdmap=$(sed 's/\"//g' < "$dialogon")
